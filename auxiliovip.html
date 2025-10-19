@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KING UMP — Interface Azul</title>
+  <style>
+    :root{
+      --bg:#000;
+      --panel:#111;
+      --accent:#1a8cff;
+      --muted:#2b2b2b;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#eee;background:var(--bg);}
+    canvas#bg{position:fixed;inset:0;z-index:0}
+    .wrap{position:relative;z-index:5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+    .card{
+      width:360px;max-width:92vw;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:18px 18px 22px;
+      box-shadow:0 6px 40px rgba(0,100,255,0.08),0 2px 8px rgba(0,0,0,0.6);
+      border:1px solid rgba(0,100,255,0.08);
+      backdrop-filter: blur(6px);
+      box-sizing:border-box;position:relative;overflow:hidden;
+      display:none;
+    }
+    .login-screen{
+      position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;
+      background:rgba(0,0,0,0.8);z-index:10;backdrop-filter:blur(10px);
+    }
+    .login-box{
+      background:var(--panel);
+      padding:30px 25px;border-radius:12px;text-align:center;
+      box-shadow:0 0 20px rgba(0,100,255,0.3);
+    }
+    .login-box h2{color:var(--accent);margin-bottom:16px}
+    .login-box input{
+      width:200px;padding:10px;border-radius:8px;border:1px solid rgba(0,100,255,0.3);
+      background:#000;color:#fff;text-align:center;outline:none;
+    }
+    .login-box button{
+      margin-top:12px;padding:10px 18px;border:none;border-radius:8px;background:var(--accent);
+      color:#111;font-weight:700;cursor:pointer;transition:0.3s;
+    }
+    .login-box button:hover{background:#3399ff;}
+    .error{color:#ff5555;margin-top:10px;font-size:13px;display:none;}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .title{font-weight:700;font-size:18px;letter-spacing:0.6px}
+    .tabs{display:flex;gap:8px}
+    .tab{padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;background:var(--muted)}
+    .tab.active{background:var(--accent);color:#111}
+    .section{margin:8px 0}
+    label.checkbox{display:flex;gap:10px;align-items:center;cursor:pointer;margin:8px 0}
+    label.checkbox input{width:18px;height:18px}
+    .slider{width:100%;appearance:none;height:6px;background:rgba(255,255,255,0.03);border-radius:10px;outline:none}
+    .slider::-webkit-slider-thumb{
+      appearance:none;width:16px;height:16px;border-radius:50%;
+      background:var(--accent);box-shadow:0 0 10px rgba(0,100,255,0.6)
+    }
+    .select{display:block;width:100%;padding:10px;border-radius:8px;
+      border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;margin-top:8px}
+    .divider{height:1px;background:rgba(0,100,255,0.06);margin:12px 0;border-radius:2px}
+    .radios{display:flex;flex-direction:column;gap:8px}
+    .radio{display:flex;gap:10px;align-items:center}
+    .big-btn{
+      display:block;width:100%;padding:14px;border-radius:12px;background:var(--accent);
+      color:#111;text-align:center;font-weight:800;margin-top:12px;
+      box-shadow:0 8px 20px rgba(0,100,255,0.12);cursor:pointer;transition:0.3s;
+      border:none;text-decoration:none;
+    }
+    .big-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .big-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,100,255,0.2)}
+    .fov-value{font-size:13px;color:rgba(255,255,255,0.7);margin-top:6px}
+    .small{font-size:12px;color:rgba(255,255,255,0.6)}
+    .code-badge{display:inline-block;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.04);font-weight:700}
+    .notification {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(6px);
+    }
+    .notification-box {
+      background: #111;
+      border: 1px solid rgba(0,150,255,0.3);
+      box-shadow: 0 0 25px rgba(0,150,255,0.3);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+      color: #fff;
+      width: 300px;
+      animation: fadeIn 0.3s ease;
+    }
+    .notification-box button {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 8px;
+      transition: 0.2s;
+    }
+    .notification-box button:hover { opacity: 0.9; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .tech-info{background:rgba(0,100,255,0.05);padding:12px;border-radius:8px;margin-top:10px;font-size:11px;line-height:1.6}
+    @media (max-width:420px){.card{width:92vw;padding:14px}}
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <h2>🔒 Acesso KING UMP</h2>
+      <input type="password" id="keyInput" placeholder="Digite a key...">
+      <button onclick="checkKey()">Entrar</button>
+      <div class="error" id="errorMsg">Key incorreta!</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card" id="painel">
+      <div class="header">
+        <div class="title">KING UMP</div>
+        <div class="tabs">
+          <div class="tab active" data-target="aimSection">Aimbot</div>
+          <div class="tab" data-target="configSection">Config</div>
+          <div class="tab" data-target="infoSection">Info</div>
+        </div>
+      </div>
+
+      <div id="aimSection">
+        <div class="section">
+          <label class="checkbox"><input type="checkbox" id="ativarAux" checked><span>Ativar Auxílio</span></label>
+          <label class="checkbox"><input type="checkbox" id="ativarFov" checked><span>Ativar Fov</span></label>
+          <label class="checkbox"><input type="checkbox" id="precisao80"><span>80% Precisão</span></label>
+          <label class="checkbox"><input type="checkbox" id="headKill"><span>Head Kill 100%</span></label>
+          <input id="fovSlider" class="slider" type="range" min="10" max="180" value="100">
+          <div class="fov-value">Fov: <span id="fovVal">100</span></div>
+          <select class="select" id="alvoSelect">
+            <option>Auxílio Cabeça</option>
+            <option>Auxílio Corpo</option>
+            <option>Auxílio Prioritário</option>
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+          <div style="font-weight:700;margin-bottom:8px">Tipo de Aimbot:</div>
+          <div class="radios">
+            <label class="radio"><input type="radio" name="aimMode" value="shoot" checked><span>Ao Atirar</span></label>
+            <label class="radio"><input type="radio" name="aimMode" value="look"><span>Ao Olhar</span></label>
+            <label class="radio"><input type="radio" name="aimMode" value="continuous"><span>Mira Grudar 100%</span></label>
+          </div>
+        </div>
+
+        <button class="big-btn" id="injectBtn">INJETAR FUNÇÕES NO JOGO</button>
+        <button class="big-btn" id="deactivateBtn" style="background:#e74c3c;margin-top:8px;">DESATIVAR Dword:00009</button>
+
+        <div style="margin-top:10px">
+          <div style="font-weight:700;margin-bottom:8px;text-align:center;">Abrir Jogo:</div>
+          <a href="intent://#Intent;scheme=freefire;package=com.dts.freefiremax;end"
+             class="big-btn"
+             style="margin-top:6px;">
+             🎮 FREE FIRE MAX
+          </a>
+          <a href="intent://#Intent;scheme=freefire;package=com.dts.freefireth;end"
+             class="big-btn"
+             style="margin-top:8px;">
+             🔥 FREE FIRE
+          </a>
+        </div>
+
+        <div style="margin-top:10px" class="small">
+          Status: <span id="statusText" class="code-badge">Não ativado</span>
+        </div>
+      </div>
+
+      <div id="configSection" style="display:none; padding: 8px 0;">
+        <div class="section">
+          <div style="font-weight:700;margin-bottom:10px">Configurações Técnicas</div>
+          <label class="checkbox"><input type="checkbox" id="sensitivy"><span>Sensitivy Ativo</span></label>
+          <label class="checkbox"><input type="checkbox" id="noTremer"><span>Mira Não Tremer</span></label>
+          <label class="checkbox"><input type="checkbox" id="miraPesada"><span>Mira Pesada (Mais Preciso)</span></label>
+          
+          <div class="tech-info">
+            <strong>Códigos Ativos:</strong><br>
+            <span id="activeCodesDisplay">Nenhum código ativo</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="infoSection" style="display:none; padding: 8px 0;">
+        <div class="section">
+          <p style="margin:0;line-height:1.4;">
+            Este é um auxílio para facilitar a mira no jogo. Não se trata de cheat, apenas assistência de mira.<br><br>
+            <strong>Desenvolvido por: @mknha.zw</strong>
+          </p>
+          <div class="tech-info" style="margin-top:14px">
+            <strong>Versão:</strong> 1.94.8<br>
+            <strong>Package:</strong> com.dts.freefireth<br>
+            <strong>Compatível:</strong> Free Fire MAX
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TECHNICAL_CONFIG = {
+      touchMoveDx: 'esp+560h+wndpl.rcNormalPosition.bottom=1000C030',
+      touchMoveCx: 'esp+560h+wndpl.rcNormalPosition.top=1000C034',
+      mouseOriginalRecoil: 'NULL',
+      packageName: 'com.dts.freefireth',
+      version: '1.94.8',
+      coringaCodes: [
+        {id: 'd0264854', desc: 'HS Cabeça', offset: '4a2a54', lib: 'libil2cpp.so'},
+        {id: 'd0264855', desc: 'Aimbot', offset: '4a2a55', lib: 'libil2cpp.so'},
+        {id: 'd627a2b6', desc: 'Aimbot FOV 180', offset: '4b82b6', lib: 'libil2cpp.so'},
+        {id: 'diaac609', desc: 'Aim Ignorar Derrubados', offset: '1cea609', lib: 'libil2cpp.so'},
+        {id: 'diaac60a', desc: 'Aim Lock', offset: '1cea60a', lib: 'libil2cpp.so'},
+        {id: 'd0264a56', desc: 'Ghost (Teleporte)', offset: '4a2a56', lib: 'libil2cpp.so'},
+        {id: 'd0264a57', desc: 'Atravessar Paredes', offset: '4a2a57', lib: 'libil2cpp.so'},
+        {id: 'd8264a58', desc: 'Medkit em Movimento', offset: '4a2a58', lib: 'libil2cpp.so'},
+        {id: 'd0264a59', desc: 'Visão de Águia', offset: '4a2a59', lib: 'libil2cpp.so'},
+        {id: 'd8264a5a', desc: 'Dispersão de Tiro', offset: '4a2a5a', lib: 'libil2cpp.so'},
+        {id: 'd0264a5b', desc: 'Telekill', offset: '4a2a5b', lib: 'libil2cpp.so'},
+        {id: 'd8266618', desc: 'Pulo 2x 4x', offset: '4a4618', lib: 'libil2cpp.so'},
+        {id: 'd0266619', desc: 'Antena Cabeça', offset: '484619', lib: 'libil2cpp.so'},
+        {id: 'd826661a', desc: 'Alcance Hack', offset: '4a461a', lib: 'libil2cpp.so'},
+        {id: 'd026661b', desc: 'Chuva de Balas', offset: '48461b', lib: 'libil2cpp.so'},
+        {id: 'd026661c', desc: 'Personagem Grande', offset: '4a461c', lib: 'libil2cpp.so'},
+        {id: 'd826661d', desc: 'Correr 2x 4x', offset: '48461d', lib: 'libil2cpp.so'},
+        {id: 'd8266610', desc: 'Remover Mira', offset: '4a461e', lib: 'libil2cpp.so'},
+        {id: 'd026661f', desc: 'Carro Fantasma', offset: '4a461f', lib: 'libil2cpp.so'},
+        {id: 'de27a2b1', desc: 'Sem Neblina', offset: '4b82b1', lib: 'libil2cpp.so'},
+        {id: 'd027a2b2', desc: 'Personagem Branco', offset: '4b82b2', lib: 'libil2cpp.so'},
+        {id: 'd027a2b3', desc: 'Desbloqueio IMEI/MEID/Serial', offset: '4582b3', lib: 'libil2cpp.so'},
+        {id: 'd027a2b4', desc: 'Wallhack', offset: '4b82b4', lib: 'libil2cpp.so'},
+        {id: 'd027a2b5', desc: 'ESP LINE', offset: '4b82b5', lib: 'libil2cpp.so'},
+        {id: 'de27a2b6', desc: 'Speedy Moto', offset: '4682677', lib: 'libil2cpp.so'},
+        {id: 'd827a2b7', desc: 'Limpar Report', offset: '4b82b7', lib: 'libil2cpp.so'},
+        {id: 'diaac684', desc: 'Soco Rápido', offset: '1cea664', lib: 'libil2cpp.so'},
+        {id: 'diaac605', desc: 'No Recoil', offset: '1cea605', lib: 'libil2cpp.so'},
+        {id: 'diaac607', desc: 'Sem Dano Ao Cair', offset: '1cea667', lib: 'libil2cpp.so'},
+        {id: 'diaac608', desc: 'Granada Infinita', offset: '1cea665', lib: 'libil2cpp.so'},
+        {id: 'diaac60b', desc: 'Ícone Invisível', offset: '1cea66b', lib: 'libil2cpp.so'}
+      ],
+      dwordCodes: [
+        {id: '00001', desc: 'AimBot 100%', dword: '9900909'},
+        {id: '00002', desc: 'Sensitivy AimBot', dword: '000009'},
+        {id: '00003', desc: 'Mira Pesada Preciso', dword: 'String'},
+        {id: '00004', desc: 'AimBot VIP', dword: '000009'},
+        {id: '00005', desc: 'Mira Grudar 100%', dword: 'StartActivity'},
+        {id: '00006', desc: 'Segurar na Cabeça', dword: 'StartActivity'},
+        {id: '00007', desc: 'AimGrudar + Sensitivy', dword: 'StartActivity'},
+        {id: '00008', desc: 'HeadKill 100%', dword: 'Sensitivy'},
+        {id: '00009', desc: 'Path Config AimBot', dword: '00009'}
+      ]
+    };
+
+    function checkKey(){
+      const input = document.getElementById('keyInput').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      if(input === "Keyking"){
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('painel').style.display = 'block';
+        loadSimState();
+        updateActiveCodesDisplay();
+      } else {
+        errorMsg.style.display = 'block';
+        setTimeout(()=> errorMsg.style.display = 'none', 2000);
+      }
+    }
+
+    const canvas = document.getElementById('bg');
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = innerWidth;
+    let h = canvas.height = innerHeight;
+    window.addEventListener('resize', ()=>{w=canvas.width=innerWidth;h=canvas.height=innerHeight;init();});
+    const config = {count: Math.round((w*h)/60000 * 30), maxDist:140, speed:0.5};
+    let points = [];
+    function rand(min,max){return Math.random()*(max-min)+min}
+    function init(){points=[];for(let i=0;i<Math.max(12,config.count);i++){points.push({x:rand(0,w),y:rand(0,h),vx:rand(-config.speed,config.speed),vy:rand(-config.speed,config.speed),r:rand(1,2.6)});}}
+    init();
+    function step(){
+      ctx.clearRect(0,0,w,h);
+      for(let i=0;i<points.length;i++){
+        const p=points[i];
+        for(let j=i+1;j<points.length;j++){
+          const q=points[j];const dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+          if(d<config.maxDist){const a=1-(d/config.maxDist);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(0,150,255,${0.06*a})`;ctx.stroke();}
+        }
+      }
+      for(let p of points){
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,18);g.addColorStop(0,'rgba(0,150,255,0.18)');g.addColorStop(1,'rgba(0,150,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(0,150,255,1)';ctx.fill();
+        p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;
+      }
+      requestAnimationFrame(step);
+    } step();
+
+    const fovSlider=document.getElementById('fovSlider'),fovVal=document.getElementById('fovVal');
+    fovSlider.addEventListener('input',()=>fovVal.textContent=fovSlider.value);
+
+    (function(){
+      const tabs=document.querySelectorAll('.tab');
+      const sections={
+        aimSection:document.getElementById('aimSection'),
+        configSection:document.getElementById('configSection'),
+        infoSection:document.getElementById('infoSection')
+      };
+      function activateTab(t){
+        tabs.forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        const target=t.dataset.target;
+        Object.keys(sections).forEach(k=>sections[k].style.display=k===target?'':'none');
+      }
+      tabs.forEach(tab=>tab.addEventListener('click',()=>activateTab(tab)));
+      const initial=document.querySelector('.tab.active');
+      if(initial)activateTab(initial);
+    })();
+
+    const injectBtn=document.getElementById('injectBtn');
+    const deactivateBtn=document.getElementById('deactivateBtn');
+    const statusText=document.getElementById('statusText');
+    const simKey='kingump_simulated_codes_v1';
+
+    function loadSimState(){
+      try{
+        const codes=JSON.parse(localStorage.getItem(simKey))||{};
+        const s=codes['Dword:00009'];
+        if(s&&s.active){
+          statusText.textContent='Dword:00009 ATIVO';
+          statusText.style.background='linear-gradient(90deg,#00cc66,#1a8cff)';
+        } else {
+          statusText.textContent='Não ativado';
+          statusText.style.background='rgba(255,255,255,0.04)';
+        }
+      }catch(e){statusText.textContent='Não ativado';}
+    }
+
+    function updateActiveCodesDisplay(){
+      try{
+        const codes=JSON.parse(localStorage.getItem(simKey))||{};
+        const active = Object.keys(codes).filter(k=>codes[k].active);
+        const display = document.getElementById('activeCodesDisplay');
+        if(active.length>0){
+          display.innerHTML = active.map(k=>`• ${k}`).join('<br>');
+        }else{
+          display.textContent = 'Nenhum código ativo';
+        }
+      }catch(e){}
+    }
+
+    function createProgressBar(){
+      const old=document.getElementById('simProgressWrap');if(old)old.remove();
+      const prog=document.createElement('div');prog.style.position='absolute';prog.style.left='18px';prog.style.right='18px';prog.style.bottom='18px';prog.style.height='10px';prog.style.borderRadius='8px';prog.style.background='rgba(255,255,255,0.06)';prog.style.overflow='hidden';prog.id='simProgressWrap';
+      const fill=document.createElement('div');fill.style.height='100%';fill.style.width='0%';fill.style.borderRadius='8px';fill.style.transition='width 400ms linear';fill.style.background='linear-gradient(90deg, #1a8cff, #00cc66)';fill.id='simProgressFill';
+      prog.appendChild(fill);document.getElementById('painel').appendChild(prog);return{wrap:prog,fill};
+    }
+    
+    function stepProgress(f,to,d){return new Promise(res=>{setTimeout(()=>{f.style.width=to+'%';setTimeout(res,450);},d);});}
+
+    injectBtn.addEventListener('click',()=>showInjectOptions());
+
+    function showInjectOptions(){
+      const notif=document.createElement('div');
+      notif.className='notification';
+      notif.innerHTML=`
+        <div class="notification-box">
+          <h3>Deseja injetar funções?</h3>
+          <div style="margin-top:14px;">
+            <button id="optAtivar">Ativar</button>
+            <button id="optDesativar" style="background:#e74c3c;color:#fff;">Desativar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(notif);
+
+      document.getElementById('optAtivar').onclick=()=>{notif.remove();showInjectedNotice();startInjectionSim();};
+      document.getElementById('optDesativar').onclick=()=>notif.remove();
+    }
+
+    function showInjectedNotice(){
+      const notif=document.createElement('div');
+      notif.className='notification';
+      notif.innerHTML=`
+        <div class="notification-box" style="background:#0a0;">
+          <strong style="color:#00ff99;font-size:16px;">✅ Injetado!</strong>
+        </div>`;
+      document.body.appendChild(notif);
+      setTimeout(()=>notif.remove(),1500);
+    }
+
+    async function startInjectionSim(){
+      injectBtn.disabled=true;injectBtn.textContent='Injetando...';injectBtn.style.background='#1a8cff';injectBtn.style.color='#111';
+      const {fill,wrap}=createProgressBar();
+      await stepProgress(fill,25,150);
+      await stepProgress(fill,55,180);
+      await stepProgress(fill,85,160);
+      await stepProgress(fill,100,180);
+      
+      let codes={};
+      try{codes=JSON.parse(localStorage.getItem(simKey))||{};}catch(e){}
+      
+      TECHNICAL_CONFIG.dwordCodes.forEach(code=>{
+        codes[`Dword:${code.id}`]={active:true,desc:code.desc,dword:code.dword};
+      });
+
+      TECHNICAL_CONFIG.coringaCodes.forEach(code=>{
+        codes[`Coringa:${code.id}`]={active:true,desc:code.desc,offset:code.offset,lib:code.lib};
+      });
+      
+      localStorage.setItem(simKey,JSON.stringify(codes));
+      
+      setTimeout(()=>{
+        wrap.remove();
+        injectBtn.textContent='✓ FUNÇÕES INJETADAS';
+        injectBtn.style.background='#00cc66';
+        statusText.textContent='Dword:00009 ATIVO';
+        statusText.style.background='linear-gradient(90deg,#00cc66,#1a8cff)';
+        updateActiveCodesDisplay();
+        setTimeout(()=>{injectBtn.disabled=false;injectBtn.textContent='INJETAR FUNÇÕES NO JOGO';injectBtn.style.background='#1a8cff';},2500);
+      },400);
+    }
+
+    deactivateBtn.addEventListener('click',()=>{
+      let codes={};
+      try{codes=JSON.parse(localStorage.getItem(simKey))||{};}catch(e){}
+      Object.keys(codes).forEach(k=>codes[k].active=false);
+      localStorage.setItem(simKey,JSON.stringify(codes));
+      statusText.textContent='Não ativado';
+      statusText.style.background='rgba(255,255,255,0.04)';
+      updateActiveCodesDisplay();
+      
+      const notif=document.createElement('div');
+      notif.className='notification';
+      notif.innerHTML=`
+        <div class="notification-box" style="background:#c00;">
+          <strong style="color:#ff6666;font-size:16px;">🔴 Desativado!</strong>
+        </div>`;
+      document.body.appendChild(notif);
+      setTimeout(()=>notif.remove(),1500);
+    });
+  </script>
+</body>
+</html>
